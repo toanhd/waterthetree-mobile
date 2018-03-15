@@ -12,6 +12,8 @@ import {
   GroundOverlay, GroundOverlayOptions
 } from '@ionic-native/google-maps';
 
+import { GhModule } from '../../providers/gh-module/gh-module'
+
 @IonicPage()
 @Component({
   selector: 'page-gh-home',
@@ -28,6 +30,7 @@ export class GhHomePage {
   constructor(public navCtrl: NavController,
     public mGeolocation: Geolocation,
     public mAlertController: AlertController,
+    public mGhModule: GhModule,
     public navParams: NavParams) {
   }
 
@@ -147,4 +150,14 @@ export class GhHomePage {
     // }
   }
 
+  url = "localhost:3000"
+  onClickGet() {
+    try {
+      this.mGhModule.getHttpService().get(this.url).subscribe(data => {
+        console.log(data);
+      });
+    } catch(e){
+      console.log("Error cmnr", e);      
+    }
+  }
 }
