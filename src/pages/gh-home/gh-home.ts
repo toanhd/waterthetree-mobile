@@ -1,7 +1,7 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
+import {Component, ViewChild, ElementRef} from '@angular/core';
+import {IonicPage, NavController, NavParams, AlertController} from 'ionic-angular';
 
-import { Geolocation } from '@ionic-native/geolocation';
+import {Geolocation} from '@ionic-native/geolocation';
 
 import {
   GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions,
@@ -12,7 +12,7 @@ import {
   GroundOverlay, GroundOverlayOptions
 } from '@ionic-native/google-maps';
 
-import { GhModule } from '../../providers/gh-module/gh-module'
+import {GhModule} from '../../providers/gh-module/gh-module'
 
 @IonicPage()
 @Component({
@@ -28,10 +28,10 @@ export class GhHomePage {
   me: Marker;
 
   constructor(public navCtrl: NavController,
-    public mGeolocation: Geolocation,
-    public mAlertController: AlertController,
-    public mGhModule: GhModule,
-    public navParams: NavParams) {
+              public mGeolocation: Geolocation,
+              public mAlertController: AlertController,
+              public mGhModule: GhModule,
+              public navParams: NavParams) {
   }
 
   ionViewDidEnter() {
@@ -135,6 +135,7 @@ export class GhHomePage {
   }
 
   isShowingAlert = false;
+
   onChangePosition(data) {
     this.mPosition = new LatLng(data.coords.latitude, data.coords.longitude);
 
@@ -150,14 +151,15 @@ export class GhHomePage {
     // }
   }
 
-  url = "localhost:3000"
+  url = "http://localhost:3000/";
+
   onClickGet() {
     try {
-      this.mGhModule.getHttpService().get(this.url).subscribe(data => {
-        console.log(data);
+      this.mGhModule.getHttpService().get(this.url + 'plant').subscribe(data => {
+        console.log(data['_body']);
       });
-    } catch(e){
-      console.log("Error cmnr", e);      
+    } catch (e) {
+      console.log("Error cmnr", e);
     }
   }
 }
