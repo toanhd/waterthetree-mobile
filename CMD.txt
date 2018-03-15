@@ -1,0 +1,23 @@
+BUILD ANDROID:
+- add platform:
+    ionic cordova platform add android
+- build: 
+    ionic cordova build android
+
+PLUGINS
+1. GoogleMaps
+AiaStore : com.appinasia.appih  
+ios : AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU
+android : AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws
+
+ionic cordova plugin add https://github.com/mapsplugin/cordova-plugin-googlemaps#multiple_maps --variable API_KEY_FOR_ANDROID="AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws" --variable API_KEY_FOR_IOS="AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU"
+OR ionic cordova plugin add cordova-plugin-googlemaps --variable API_KEY_FOR_ANDROID="AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws" --variable API_KEY_FOR_IOS="AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU"
+npm install --save @ionic-native/google-maps
+
+2. Device
+ionic cordova plugin add cordova-plugin-device
+npm install --save @ionic-native/device
+
+3. Geolocation
+ionic cordova plugin add cordova-plugin-geolocation --variable GEOLOCATION_USAGE_DESCRIPTION="To locate you"
+npm install --save @ionic-native/geolocation
