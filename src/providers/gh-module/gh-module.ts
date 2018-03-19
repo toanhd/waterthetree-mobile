@@ -70,7 +70,7 @@ export class GhModule {
             this.trees.push(tree);
           });
           console.log(this.trees);
-          
+
 
           i++;
           if (i == 2) {
@@ -80,7 +80,7 @@ export class GhModule {
         else {
           rej();
         }
-      });;
+      });
 
       let waterRes = this.getWaterResourceData();
       if (waterRes) {
@@ -108,6 +108,28 @@ export class GhModule {
       else {
         rej();
       }
+    });
+  }
+
+  RefreshTreeData() {
+    this.trees = [];
+
+    return new Promise((res, rej) => {
+      this.getTreeData().subscribe(data => {
+
+        if (data && data['status'] == 200) {
+
+          JSON.parse(data["_body"]).plants.forEach(element => {
+            let tree = new Tree();
+            tree.onResponseData(element);
+
+            this.trees.push(tree);
+          });
+
+          res(this.trees);
+
+        }
+      });
     });
   }
 

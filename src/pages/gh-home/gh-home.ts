@@ -39,12 +39,10 @@ export class GhHomePage {
 
   mDatas = {
     markers: [
-      "l_tree_marker.png",
-      "m_tree_marker.png",
-      "m_tree_marker.png",
-      "grass_marker.png",
-      "m_tree_marker.png",
-      "l_tree_marker.png"
+      "",
+      "small-",
+      "medium-",
+      "large-"
     ]
   }
 
@@ -75,7 +73,6 @@ export class GhHomePage {
     watch.subscribe((data) => {
       this.onChangePosition(data);
     });
-
   }
 
   loadMap() {
@@ -176,7 +173,7 @@ export class GhHomePage {
     this.mTrees.forEach(tree => {
       let markerOpt: MarkerOptions = {
         icon: {
-          url: './assets/imgs/' + this.mDatas.markers[tree.type_id],
+          url: './assets/imgs/' + (this.mDatas.markers[tree.size_id] + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
           size: {
             width: 20,
             height: 30
@@ -196,7 +193,8 @@ export class GhHomePage {
           infoWindow.setAttribute("width", "100");
 
           let text = document.createElement("div");
-          text.innerHTML = "id: " + tree.id + "\n"
+          text.innerHTML = "id: " + tree.id + "<br>"
+            + "Loại cây: " + tree.type_name + "<br>"
             + "lượng nước hiện tại: " + tree.current_water_level + "/" + tree.max_water_level;
           text.setAttribute("id", "info-text");
 
@@ -220,8 +218,17 @@ export class GhHomePage {
               });
               toast.present();
 
-              document.getElementById("info-text").innerHTML = "id: " + tree.id + "\n"
+              document.getElementById("info-text").innerHTML = "id: " + tree.id + "<br>"
+                + "Loại cây: " + tree.type_name + "<br>"
                 + "lượng nước hiện tại: " + tree.current_water_level + "/" + tree.max_water_level;
+
+              marker.setIcon({
+                url: './assets/imgs/' + (this.mDatas.markers[tree.size_id] + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
+                size: {
+                  width: 20,
+                  height: 30
+                },
+              });
             }
             else {
               let alert = this.mAlertController.create({
@@ -239,7 +246,7 @@ export class GhHomePage {
           htmlInfoWindow.setContent(infoWindow);
           htmlInfoWindow.open(marker);
         });
-
+        this.findTreesAround();
       });
     });
   }
@@ -474,6 +481,25 @@ export class GhHomePage {
     }
     this.mGhModule.getHttpService().patch(this.url + 'plant/', body).subscribe(data => {
       console.log(data);
+    });
+  }
+
+  clearTreesMarker() {
+    return new Promise((res, rej) => {
+
+      this.mTrees.forEach(tree => {
+        tree.getMarker().remove();
+      });
+      res();
+    });
+  }
+
+  onClickRefresh() {
+    this.clearTreesMarker().then(() => {
+      this.mGhModule.RefreshTreeData().then(data => {
+        this.mTrees = this.mGhModule.getTrees();
+        this.onPlanningTrees();
+      });
     });
   }
 
