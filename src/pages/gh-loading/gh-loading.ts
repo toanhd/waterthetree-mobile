@@ -1,12 +1,8 @@
 import { Component } from '@angular/core';
-import { IonicPage, NavController, NavParams } from 'ionic-angular';
+import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 
-/**
- * Generated class for the GhLoadingPage page.
- *
- * See https://ionicframework.com/docs/components/#navigation for more info on
- * Ionic pages and navigation.
- */
+import { GhModule } from '../../providers/gh-module/gh-module'
+
 
 @IonicPage()
 @Component({
@@ -15,7 +11,10 @@ import { IonicPage, NavController, NavParams } from 'ionic-angular';
 })
 export class GhLoadingPage {
 
-  constructor(public navCtrl: NavController, public navParams: NavParams) {
+  constructor(public navCtrl: NavController,
+    public mAlertController: AlertController,
+    public mGhModule: GhModule,
+    public navParams: NavParams) {
   }
 
   ionViewDidEnter() {
@@ -23,10 +22,24 @@ export class GhLoadingPage {
     this.onLoginProcess()
   }
 
-  onLoginProcess(){
-    setTimeout(() => {
-      this.navCtrl.push("GhHomePage");
-    }, 2000);
+  onLoginProcess() {
+    this.mGhModule.loadServerData().then(() => {
+      setTimeout(() => {
+        this.navCtrl.setRoot("GhHomePage");
+      }, 1000);
+    }).catch(() => {
+      let alert = this.mAlertController.create({
+        title: 'ERROR',
+        subTitle: 'Không kêt nối được với Server, vui lòng kiểm tra lại kết nối',
+        buttons: [{
+          text: "Thử lại",
+          handler: () => {
+            this.onLoginProcess();
+          }
+        }]
+      });
+      alert.present();
+    });
   }
 
 }

@@ -1,0 +1,33 @@
+{
+    "tree_types": [{
+            "id": 0,
+            "name": "Cây Sấu",
+            "water_requirement": 6
+        },
+        {
+            "id": 1,
+            "name": "Cây Phượng vĩ",
+            "water_requirement": 6
+        },
+        {
+            "id": 2,
+            "name": "Cây Cau lùn",
+            "water_requirement": 4
+        },
+        {
+            "id": 3,
+            "name": "Ô cỏ",
+            "water_requirement": 2
+        },
+        {
+            "id": 4,
+            "name": "Cây Bằng lăng",
+            "water_requirement": 4
+        },
+        {
+            "id": 5,
+            "name": "Cây Sưa",
+            "water_requirement": 6
+        }
+    ]
+}
