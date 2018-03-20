@@ -55,7 +55,7 @@ export class GhModule {
     return this.getHttpService().get(this.url + "water-resource/");
   }
 
-  url = "http://40.65.182.136:8080/";
+  url = "http://52.148.84.99:8080/";
   loadServerData() {
     let i = 0;
     return new Promise((res, rej) => {

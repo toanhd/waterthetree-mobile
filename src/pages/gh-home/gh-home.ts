@@ -24,6 +24,7 @@ import { WaterResource } from '../../providers/classes/water-resourse';
   templateUrl: 'gh-home.html',
 })
 export class GhHomePage {
+  url = "http://52.148.84.99:8080/";
   @ViewChild('map') mapElement: ElementRef;
   map: GoogleMap;
   mPosition: LatLng;
@@ -431,7 +432,6 @@ export class GhHomePage {
     }
   }
 
-  url = "http://40.65.182.136:8080/";
 
   onClickGet() {
     try {
@@ -488,7 +488,9 @@ export class GhHomePage {
     return new Promise((res, rej) => {
 
       this.mTrees.forEach(tree => {
-        tree.getMarker().remove();
+        if (tree.getMarker()) {
+          tree.getMarker().remove();
+        }
       });
       res();
     });
