@@ -1,21 +1,39 @@
-import { Http } from '@angular/http';
-import { Injectable } from '@angular/core';
+import { Quest } from './../classes/quest';
+import { Http, Headers } from '@angular/http';
+import { Injectable, Query } from '@angular/core';
+
+import { Spherical, LatLng } from '@ionic-native/google-maps';
 
 import { Tree } from '../classes/tree';
 import { TreeType } from '../classes/tree-type';
 import { WaterResource } from '../classes/water-resourse';
+import { User } from '../classes/user';
+
+declare var google;
 
 @Injectable()
 export class GhModule {
 
+  private directionService = new google.maps.DirectionsService();
+
+  mUser: User = new User("");
   mTreeTypes: Array<TreeType> = [];
   trees: Array<Tree> = [];
   waters: Array<WaterResource> = [];
+  quest: Quest;
 
   constructor(public http: Http) {
     console.log('Hello GhModule Provider');
     // this.getDataConfig();
     // this.loadServerData();
+  }
+
+  login() {
+
+  }
+
+  getUser() {
+    return this.mUser;
   }
 
   getHttpService() {
@@ -55,7 +73,7 @@ export class GhModule {
     return this.getHttpService().get(this.url + "water-resource/");
   }
 
-  url = "http://52.148.84.99:8080/";
+  url = "http://52.148.83.12:8080/";
   loadServerData() {
     let i = 0;
     return new Promise((res, rej) => {
@@ -139,5 +157,47 @@ export class GhModule {
 
   getWaters() {
     return this.waters;
+  }
+
+  updateQuests() {
+    if (this.mUser.currentLocation) {
+      this.trees.forEach(tree => {
+
+        let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
+
+        if (this.quest && (distance < this.quest.distance)) {
+          let q = new Quest(tree, distance);
+        }
+      });
+    }
+  }
+
+  // function
+
+  directionTo(origin: LatLng, destination: LatLng) {
+    return new Promise((res, rej) => {
+      let req = {
+        origin: {
+          lat: origin.lat,
+          lng: origin.lng
+        },
+        destination: {
+          lat: destination.lat,
+          lng: destination.lng
+        },
+        optimizeWaypoints: true,
+        travelMode: "WALKING",
+
+      }
+
+      this.directionService.route(req, (data) => {
+        if (data && data['status'] == "OK") {
+          console.log(data);
+
+          res(data['routes'][0].overview_polyline);
+        }
+        rej();
+      });
+    })
   }
 }

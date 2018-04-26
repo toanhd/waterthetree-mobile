@@ -13,6 +13,7 @@ android : AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws
 ionic cordova plugin add https://github.com/mapsplugin/cordova-plugin-googlemaps#multiple_maps --variable API_KEY_FOR_ANDROID="AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws" --variable API_KEY_FOR_IOS="AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU"
 OR ionic cordova plugin add cordova-plugin-googlemaps --variable API_KEY_FOR_ANDROID="AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws" --variable API_KEY_FOR_IOS="AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU"
 npm install --save @ionic-native/google-maps
+ionic cordova plugin add cordova-plugin-googlemaps@2.3.0-rc1 --variable API_KEY_FOR_ANDROID="AIzaSyASvGt1up7hzsulG6mJVKHlbX155jr2Pws"  --variable API_KEY_FOR_IOS="AIzaSyCo95hQWBk-OIdnONgEoeM4NJrl59tz9dU"
 
 2. Device
 ionic cordova plugin add cordova-plugin-device

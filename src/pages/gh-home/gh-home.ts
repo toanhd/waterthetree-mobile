@@ -1,5 +1,9 @@
-import { Component, ViewChild, ElementRef } from '@angular/core';
-import { IonicPage, NavController, NavParams, AlertController, ToastController } from 'ionic-angular';
+import { WaterContainer } from './../../providers/classes/water-container';
+import { Subject } from 'rxjs/Subject';
+import { WorkStatus } from './../../providers/classes/user-base';
+import { User } from './../../providers/classes/user';
+import { Component, ViewChild, ElementRef, Input } from '@angular/core';
+import { IonicPage, NavController, NavParams, AlertController, ToastController, Platform } from 'ionic-angular';
 import { Geolocation } from '@ionic-native/geolocation';
 import {
   GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions,
@@ -9,7 +13,8 @@ import {
   HtmlInfoWindow,
   CameraPosition,
   GroundOverlay, GroundOverlayOptions,
-  Spherical
+  Spherical,
+  LocationService
 } from '@ionic-native/google-maps';
 
 import { GhModule } from '../../providers/gh-module/gh-module'
@@ -17,6 +22,7 @@ import { Utils } from '../../providers/app-utils';
 
 import { Tree } from '../../providers/classes/tree';
 import { WaterResource } from '../../providers/classes/water-resourse';
+
 
 @IonicPage()
 @Component({
@@ -26,9 +32,12 @@ import { WaterResource } from '../../providers/classes/water-resourse';
 export class GhHomePage {
   url = "http://52.148.84.99:8080/";
   @ViewChild('map') mapElement: ElementRef;
+
+  @Input() showModal: Subject<any> = new Subject();
+
   map: GoogleMap;
   mPosition: LatLng;
-  me: Marker;
+  me: User;
 
   mTrees: Array<Tree> = [];
   isShowAllTrees = true;
@@ -53,28 +62,29 @@ export class GhHomePage {
     public mToastController: ToastController,
     public mAlertController: AlertController,
     public mGhModule: GhModule,
+    private mPlatform: Platform,
     public navParams: NavParams) {
     this.mTrees = mGhModule.getTrees();
     this.mWaters = mGhModule.getWaters();
-    // console.log(mGhModule.getTrees());
+
+    this.me = mGhModule.getUser();
   }
 
   ionViewDidEnter() {
-    if (!this.map) {
-      this.loadMap();
-    }
+    this.mPlatform.ready().then(() => {
+      if (this.mPlatform.is('android') || this.mPlatform.is('ios')) {
+        if (!this.map) {
+          this.loadMap();
+        }
 
-    this.mGeolocation.getCurrentPosition().then((resp) => {
-      this.mPosition = new LatLng(resp.coords.latitude, resp.coords.longitude);
-    }).catch((error) => {
-      console.log('Error getting location', error);
-    });
-
-    let watch = this.mGeolocation.watchPosition();
-    watch.subscribe((data) => {
-      this.onChangePosition(data);
+        let watch = this.mGeolocation.watchPosition({ enableHighAccuracy: true });
+        watch.subscribe((data) => {
+          this.onChangePosition(data);
+        });
+      }
     });
   }
+
 
   loadMap() {
     let element: HTMLElement = document.getElementById('map');
@@ -88,8 +98,9 @@ export class GhHomePage {
 
     this.map.one(GoogleMapsEvent.MAP_READY).then(() => {
       console.log('Map is ready!');
+      LocationService.getMyLocation().then(location => {
 
-      this.map.getMyLocation().then(location => {
+        // this.map.getMyLocation().then(location => {
         console.log(location);
 
         let mapOptions: GoogleMapOptions = {
@@ -136,7 +147,7 @@ export class GhHomePage {
         }
 
         this.map.addMarker(me).then((marker: Marker) => {
-          this.me = marker;
+          this.me.marker = marker;
         });
 
         this.onPlanningTrees();
@@ -159,15 +170,9 @@ export class GhHomePage {
     this.mPosition = new LatLng(data.coords.latitude, data.coords.longitude);
 
     if (this.me) {
-      this.me.setPosition(this.mPosition);
+      this.me.move(this.mPosition);
     }
 
-    // if (this.map) {
-    //   this.map.animateCamera({
-    //     target: this.mPosition,
-    //     duration: 100
-    //   });
-    // }
   }
 
   onPlanningTrees() {
@@ -316,6 +321,9 @@ export class GhHomePage {
   }
 
   onClickSetting() {
+    // send event to show modal
+    this.showModal.next({ status: this.me.status });
+
     let alert = this.mAlertController.create();
     alert.setTitle('Tree View');
 
@@ -347,7 +355,7 @@ export class GhHomePage {
         }
       }
     });
-    alert.present();
+    // alert.present();
   }
 
   onClickWater() {
@@ -462,6 +470,7 @@ export class GhHomePage {
       }
       this.mGhModule.getHttpService().patch(this.url + 'plant/', body).subscribe(data => {
         console.log(data);
+        this.me.waterContainer.currentLevel--;
       });
     }
     catch (e) {
@@ -505,4 +514,118 @@ export class GhHomePage {
     });
   }
 
+  onChangeWaterLevel() {
+    if (this.me.waterContainer) {
+      let level = this.me.waterContainer.currentLevel / this.me.waterContainer.maxLevel;
+
+      let elm = document.getElementById("water-level");
+
+      elm.style.height = level * 100 + "%";
+
+      if (level <= .1) {
+        elm.style.backgroundColor = "red";
+      }
+      else if (level <= .3) {
+        elm.style.backgroundColor = "#FBF138";
+      }
+      else if (level <= .6) {
+        elm.style.backgroundColor = "#5DA326";
+      }
+      else {
+        elm.style.backgroundColor = "lightblue";
+      }
+    }
+  }
+
+  onClickWaterLevel() {
+    this.waterTreeSuccess(1);
+  }
+
+  i = 1;
+  onClickTitle() {
+    this.i++;
+    this.me.move(new LatLng(20.9924678 + 0.0001 * this.i, 105.8438314));
+  }
+
+  // ---------------------------------------FUNCTION
+  onChangeWorkStatus() {
+    if (this.me.status == WorkStatus.WORKING) {
+      this.me.stopWorking();
+
+      this.me.emptyWaterContainer();
+      this.onChangeWaterLevel();
+    }
+    else {
+      this.onChooseWaterContainer();
+    }
+  }
+
+  waterTreeSuccess(water: number) {
+    if (this.me.waterContainer) {
+      this.me.waterSuccess(water);
+      this.onChangeWaterLevel();
+    }
+  }
+
+  fillWaterContainer() {
+    this.me.fillWaterContainer();
+    this.onChangeWaterLevel();
+  }
+
+  onChooseWaterContainer() {
+    let alert = this.mAlertController.create();
+    alert.setTitle('Pick Water Container');
+
+    alert.addInput({
+      type: 'radio',
+      label: '4L',
+      value: '4',
+      checked: this.me.waterContainer && this.me.waterContainer.maxLevel == 4
+    });
+
+    alert.addInput({
+      type: 'radio',
+      label: '6L',
+      value: '6',
+      checked: this.me.waterContainer && this.me.waterContainer.maxLevel == 6
+    });
+
+    alert.addInput({
+      type: 'radio',
+      label: '8L',
+      value: '8',
+      checked: this.me.waterContainer && this.me.waterContainer.maxLevel == 8
+    });
+
+    alert.addInput({
+      type: 'radio',
+      label: '10L',
+      value: '10',
+      checked: this.me.waterContainer && this.me.waterContainer.maxLevel == 10
+    });
+
+    alert.addButton('Cancel');
+    alert.addButton({
+      text: 'OK',
+      handler: data => {
+        if (!this.me.waterContainer || !(parseInt(data, 10) == this.me.waterContainer.maxLevel)) {
+          if (data == "4") {
+            this.me.waterContainer = new WaterContainer(4, 4);
+          }
+          else if (data == "6") {
+            this.me.waterContainer = new WaterContainer(6, 6);
+          }
+          else if (data == "8") {
+            this.me.waterContainer = new WaterContainer(8, 8);
+          }
+          else if (data == "10") {
+            this.me.waterContainer = new WaterContainer(10, 10);
+          }
+          this.me.startWorking();
+          this.onChangeWaterLevel();
+        }
+      }
+    });
+    alert.present();
+  }
 }
