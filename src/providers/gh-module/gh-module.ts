@@ -2,7 +2,7 @@ import { Quest } from './../classes/quest';
 import { Http, Headers } from '@angular/http';
 import { Injectable, Query } from '@angular/core';
 
-import { Spherical, LatLng } from '@ionic-native/google-maps';
+import { Spherical, LatLng, Encoding } from '@ionic-native/google-maps';
 
 import { Tree } from '../classes/tree';
 import { TreeType } from '../classes/tree-type';
@@ -49,10 +49,6 @@ export class GhModule {
 
           tree.onResponseData(element);
           this.trees.push(tree);
-
-          if (tree.current_water_level / tree.max_water_level <= 0.3) {
-            this.thirstyTrees.push(tree);
-          }
         });
       }
     });
@@ -79,6 +75,11 @@ export class GhModule {
   }
 
   url = "http://52.148.83.12:8080/";
+
+  getUrl() {
+    return this.url;
+  }
+
   loadServerData() {
     let i = 0;
     return new Promise((res, rej) => {
@@ -91,9 +92,12 @@ export class GhModule {
             tree.onResponseData(element);
 
             this.trees.push(tree);
-          });
-          console.log(this.trees);
 
+            if (tree.current_water_level / tree.max_water_level <= 0.34) {
+
+              this.thirstyTrees.push(tree);
+            }
+          });
 
           i++;
           if (i == 2) {
@@ -178,8 +182,6 @@ export class GhModule {
         let relevantTrees;
 
         if (this.thirstyTrees.length > 0) {
-          console.log("thirsty");
-          
           relevantTrees = this.thirstyTrees;
         }
         else {
@@ -220,6 +222,11 @@ export class GhModule {
     });
   }
 
+  stopWorking() {
+    this.mUser.stopWorking();
+
+  }
+
   // function
 
   directionTo(origin: LatLng, destination: LatLng) {
@@ -240,12 +247,43 @@ export class GhModule {
 
       this.directionService.route(req, (data) => {
         if (data && data['status'] == "OK") {
-          console.log(data);
+          let path = Encoding.decodePath(data['routes'][0].overview_polyline);
 
-          res(data['routes'][0].overview_polyline);
+          res(path);
         }
         rej();
       });
     })
+  }
+
+  findNearestWaterResourse() {
+    let water: WaterResource;
+    let distance = -1;
+    this.waters.forEach(w => {
+      let d = Spherical.computeDistanceBetween(this.mUser.currentLocation, w.latLng);
+      if (!water || d < distance) {
+        water = w;
+        distance = d;
+      }
+    });
+
+    return water;
+  }
+
+  onQuestDone() {
+    return new Promise((res, rej) => {
+      this.quest.done().then(() => {
+        console.log(this.thirstyTrees);
+        console.log(this.thirstyTrees.indexOf(this.quest.tree));
+        
+        this.thirstyTrees.splice(this.thirstyTrees.indexOf(this.quest.tree), 1);
+        console.log(this.thirstyTrees);
+        this.updateQuests().then(() => {
+          res();
+        }).catch(() => {
+          rej();
+        });
+      });
+    });
   }
 }

@@ -21,8 +21,8 @@
 <ion-content>
 
     <div #map id="map">
-        <div id="water-container">
-            <div id="water-level" (click)="onClickWaterLevel()"></div>
+        <div id="water-container" (click)="onClickWaterLevel()">
+            <div id="water-level"></div>
             <div class="level" *ngIf="me.waterContainer" (click)="fillWaterContainer()">{{me.waterContainer.currentLevel}}</div>
         </div>
     </div>
