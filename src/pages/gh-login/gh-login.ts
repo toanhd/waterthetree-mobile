@@ -17,7 +17,7 @@ export class GhLoginPage {
   }
 
   ionViewDidLoad() {
-    console.log('ionViewDidLoad GhLoginPage');
+    // console.log('ionViewDidLoad GhLoginPage');
   }
 
   onClickLogin() {
