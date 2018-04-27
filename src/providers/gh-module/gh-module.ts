@@ -13,6 +13,7 @@ declare var google;
 
 @Injectable()
 export class GhModule {
+  url = "http://52.148.83.12:8080/";
 
   private directionService = new google.maps.DirectionsService();
 
@@ -74,7 +75,6 @@ export class GhModule {
     return this.getHttpService().get(this.url + "water-resource/");
   }
 
-  url = "http://52.148.83.12:8080/";
 
   getUrl() {
     return this.url;

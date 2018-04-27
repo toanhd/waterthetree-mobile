@@ -262,7 +262,7 @@ export class GhHomePage {
 
           infoWindow.appendChild(text);
           if (this.me.status == WorkStatus.WORKING) {
-            infoWindow.appendChild(btn);
+          infoWindow.appendChild(btn);
           }
 
           htmlInfoWindow.setContent(infoWindow);

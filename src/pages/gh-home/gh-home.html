@@ -6,9 +6,10 @@
             <!-- <button ion-button icon-only (click)="onClickRefresh()">
                 <ion-icon name="ios-refresh-outline"></ion-icon>
             </button> -->
-            <button ion-button icon-only (click)="onClickWater()">
+
+            <!-- <button ion-button icon-only (click)="onClickWater()">
                 <ion-icon name="ios-water-outline"></ion-icon>
-            </button>
+            </button> -->
             <button ion-button icon-only (click)="onClickSetting()">
                 <ion-icon name="ios-settings-outline"></ion-icon>
             </button>
@@ -19,11 +20,10 @@
 
 
 <ion-content>
-
     <div #map id="map">
-        <div id="water-container" (click)="onClickWaterLevel()">
+        <div id="water-container" (click)="fillWaterContainer()">
             <div id="water-level"></div>
-            <div class="level" *ngIf="me.waterContainer" (click)="fillWaterContainer()">{{me.waterContainer.currentLevel}}</div>
+            <div class="level" *ngIf="me.waterContainer">{{me.waterContainer.currentLevel}}</div>
         </div>
     </div>
 
