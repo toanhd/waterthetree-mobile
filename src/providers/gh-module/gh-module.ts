@@ -50,7 +50,7 @@ export class GhModule {
           tree.onResponseData(element);
           this.trees.push(tree);
 
-          if (tree.current_water_level / tree.max_water_level <= 0.25) {
+          if (tree.current_water_level / tree.max_water_level <= 0.3) {
             this.thirstyTrees.push(tree);
           }
         });
@@ -164,18 +164,22 @@ export class GhModule {
     return this.waters;
   }
 
-  getQuest(){
+  getQuest() {
     return this.quest;
   }
-  
+
   updateQuests() {
     this.quest = null;
+    let tempTree: Tree;
+    let tempDistance: number = -1;
 
     return new Promise((res, rej) => {
       if (this.mUser.currentLocation) {
         let relevantTrees;
 
         if (this.thirstyTrees.length > 0) {
+          console.log("thirsty");
+          
           relevantTrees = this.thirstyTrees;
         }
         else {
@@ -185,12 +189,14 @@ export class GhModule {
         relevantTrees.forEach(tree => {
           let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
 
-          if (!this.quest || (this.quest && (distance < this.quest.distance))) {
-            this.quest = new Quest(tree, distance);
+          if (!tempTree || (tempTree && (distance < tempDistance))) {
+            tempTree = tree;
+            tempDistance = distance;
           }
         });
 
-        if (this.quest) {
+        if (tempTree) {
+          this.quest = new Quest(tempTree, tempDistance);
           res();
         }
         else {

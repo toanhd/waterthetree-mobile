@@ -16,8 +16,8 @@ export class Quest {
             let icon: MarkerIcon = {
                 url: './assets/imgs/' + (this.mDatas.markers[_tree.size_id] + (((_tree.current_water_level / _tree.max_water_level >= 0.75) ? "high" : ((_tree.current_water_level / _tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
                 size: {
-                    width: 20,
-                    height: 30
+                    width: 25,
+                    height: 35
                 }
             }
             _tree.getMarker().setIcon(icon);
