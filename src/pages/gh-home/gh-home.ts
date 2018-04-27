@@ -40,8 +40,8 @@ export class GhHomePage {
   me: User;
 
   mTrees: Array<Tree> = [];
-  isShowAllTrees = true;
-  myRadius = 50;
+  isShowAllTrees = false;
+  myRadius = 80; // 50m
 
   mWaters: Array<WaterResource> = [];
   isShowAllWaters = true;
@@ -89,7 +89,6 @@ export class GhHomePage {
   loadMap() {
     let element: HTMLElement = document.getElementById('map');
 
-    // this.map = this.mGoogleMaps.create(this.mapElement.nativeElement);
     this.map = GoogleMaps.create(element);
 
     let bachkhoa = new LatLng(21.005147, 105.843311);
@@ -99,9 +98,6 @@ export class GhHomePage {
     this.map.one(GoogleMapsEvent.MAP_READY).then(() => {
       console.log('Map is ready!');
       LocationService.getMyLocation().then(location => {
-
-        // this.map.getMyLocation().then(location => {
-        console.log(location);
 
         let mapOptions: GoogleMapOptions = {
           mapType: 'MAP_TYPE_NORMAL',
@@ -161,7 +157,7 @@ export class GhHomePage {
       });
       this.map.on(GoogleMapsEvent.CAMERA_MOVE_END).subscribe(() => {
         this.findTreesAround();
-        this.findWaterAround();
+        // this.findWaterAround();
       });
     });
   }
@@ -179,10 +175,10 @@ export class GhHomePage {
     this.mTrees.forEach(tree => {
       let markerOpt: MarkerOptions = {
         icon: {
-          url: './assets/imgs/' + (this.mDatas.markers[tree.size_id] + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
+          url: './assets/imgs/' + (this.mDatas.markers[tree.size_id] + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low"))) + "-o.png")),
           size: {
-            width: 20,
-            height: 30
+            width: 15,
+            height: 25
           },
         },
         position: tree.latLng,
@@ -229,10 +225,13 @@ export class GhHomePage {
                 + "lượng nước hiện tại: " + tree.current_water_level + "/" + tree.max_water_level;
 
               marker.setIcon({
-                url: './assets/imgs/' + (this.mDatas.markers[tree.size_id] + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
+                url: './assets/imgs/'
+                  + (this.mDatas.markers[tree.size_id]
+                    + (((tree.current_water_level / tree.max_water_level >= 0.75) ? "high" : ((tree.current_water_level / tree.max_water_level >= 0.5 ? "medium" : "low")))
+                      + (this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? "" : "-o") + ".png")),
                 size: {
-                  width: 20,
-                  height: 30
+                  width: 15,
+                  height: 25
                 },
               });
             }
@@ -261,13 +260,19 @@ export class GhHomePage {
   findTreesAround() {
     if (!this.isShowAllTrees) {
       this.mTrees.forEach(tree => {
-        let distance = Spherical.computeDistanceBetween(this.map.getCameraTarget(), tree.latLng);
+        if (!this.mGhModule.getQuest() || (tree.id != this.mGhModule.getQuest().tree.id)) {
+          let distance = Spherical.computeDistanceBetween(this.map.getCameraTarget(), tree.latLng);
 
-        if (distance < this.myRadius) {
-          tree.getMarker().setVisible(true);
-        }
-        else {
-          tree.getMarker().setVisible(false);
+          if (distance < this.myRadius) {
+            if (tree.getMarker()) {
+              tree.getMarker().setVisible(true);
+            }
+          }
+          else {
+            if (tree.getMarker()) {
+              tree.getMarker().setVisible(false);
+            }
+          }
         }
       });
     }
@@ -276,6 +281,13 @@ export class GhHomePage {
   showAllTrees() {
     this.mTrees.forEach(tree => {
       tree.getMarker().setVisible(true);
+    });
+  }
+
+  hideAllTrees() {
+    this.mTrees.forEach(tree => {
+      if (tree.getMarker())
+        tree.getMarker().setVisible(false);
     });
   }
 
@@ -295,7 +307,7 @@ export class GhHomePage {
 
       this.map.addMarker(markerOpt).then(marker => {
         water.setMarker(marker);
-      })
+      });
     });
   }
 
@@ -305,10 +317,14 @@ export class GhHomePage {
         let distance = Spherical.computeDistanceBetween(this.map.getCameraTarget(), water.latLng);
 
         if (distance < this.waterRadius) {
-          water.getMarker().setVisible(true);
+          if (water.getMarker()) {
+            water.getMarker().setVisible(true);
+          }
         }
         else {
-          water.getMarker().setVisible(false);
+          if (water.getMarker()) {
+            water.getMarker().setVisible(false);
+          }
         }
       });
     }
@@ -621,8 +637,19 @@ export class GhHomePage {
           else if (data == "10") {
             this.me.waterContainer = new WaterContainer(10, 10);
           }
-          this.me.startWorking();
-          this.onChangeWaterLevel();
+          this.mGhModule.startWorking().then(() => {
+            this.onChangeWaterLevel();
+            console.log(this.mGhModule.quest);
+
+          }).catch(() => {
+            console.log("ko co cay can tuoi");
+            let alert = this.mAlertController.create({
+              title: 'ERROR',
+              subTitle: 'ko co cay can tuoi',
+              buttons: ['OK']
+            });
+            alert.present();
+          });
         }
       }
     });

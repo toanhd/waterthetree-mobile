@@ -19,6 +19,7 @@ export class GhModule {
   mUser: User = new User("");
   mTreeTypes: Array<TreeType> = [];
   trees: Array<Tree> = [];
+  thirstyTrees: Array<Tree> = [];
   waters: Array<WaterResource> = [];
   quest: Quest;
 
@@ -48,6 +49,10 @@ export class GhModule {
 
           tree.onResponseData(element);
           this.trees.push(tree);
+
+          if (tree.current_water_level / tree.max_water_level <= 0.25) {
+            this.thirstyTrees.push(tree);
+          }
         });
       }
     });
@@ -159,17 +164,54 @@ export class GhModule {
     return this.waters;
   }
 
+  getQuest(){
+    return this.quest;
+  }
+  
   updateQuests() {
-    if (this.mUser.currentLocation) {
-      this.trees.forEach(tree => {
+    this.quest = null;
 
-        let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
+    return new Promise((res, rej) => {
+      if (this.mUser.currentLocation) {
+        let relevantTrees;
 
-        if (this.quest && (distance < this.quest.distance)) {
-          let q = new Quest(tree, distance);
+        if (this.thirstyTrees.length > 0) {
+          relevantTrees = this.thirstyTrees;
         }
+        else {
+          relevantTrees = this.trees;
+        }
+
+        relevantTrees.forEach(tree => {
+          let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
+
+          if (!this.quest || (this.quest && (distance < this.quest.distance))) {
+            this.quest = new Quest(tree, distance);
+          }
+        });
+
+        if (this.quest) {
+          res();
+        }
+        else {
+          rej();
+        }
+      }
+      else {
+        rej();
+      }
+    });
+  }
+
+  startWorking() {
+    return new Promise((res, rej) => {
+      this.mUser.startWorking();
+      this.updateQuests().then(() => {
+        res();
+      }).catch(() => {
+        rej();
       });
-    }
+    });
   }
 
   // function
