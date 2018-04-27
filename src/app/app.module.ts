@@ -11,6 +11,9 @@ import { GhModule } from '../providers/gh-module/gh-module';
 
 import { GoogleMaps } from '@ionic-native/google-maps';
 import { Geolocation } from '@ionic-native/geolocation';
+// import { SocketIoModule, SocketIoCon fig } from 'ng-socket-io';
+
+// const config: SocketIoConfig = { url: 'http://localhost:8988', options: {} };
 
 @NgModule({
   declarations: [
@@ -19,7 +22,8 @@ import { Geolocation } from '@ionic-native/geolocation';
   imports: [
     BrowserModule,
     HttpModule,
-    IonicModule.forRoot(MyApp)
+    IonicModule.forRoot(MyApp),
+    // SocketIoModule.forRoot(config) 
   ],
   bootstrap: [IonicApp],
   entryComponents: [

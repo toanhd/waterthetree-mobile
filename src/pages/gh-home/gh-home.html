@@ -1,7 +1,7 @@
 <ion-header>
 
     <ion-navbar>
-        <ion-title>gh-home</ion-title>
+        <ion-title (click)="onClickTitle()">gh-home</ion-title>
         <ion-buttons end>
             <button ion-button icon-only (click)="onClickRefresh()">
                 <ion-icon name="ios-refresh-outline"></ion-icon>
@@ -20,6 +20,13 @@
 
 <ion-content>
 
-    <div #map id="map"></div>
+    <div #map id="map">
+        <div id="water-container">
+            <div id="water-level" (click)="onClickWaterLevel()"></div>
+            <div class="level" *ngIf="me.waterContainer" (click)="fillWaterContainer()">{{me.waterContainer.currentLevel}}</div>
+        </div>
+    </div>
 
 </ion-content>
+
+<my-modal [show]="showModal" (startWork)="onChangeWorkStatus()" (changeContainer)="onChooseWaterContainer()"></my-modal>

@@ -1,0 +1,10 @@
+<div #container class="gh-setting-container hidden">
+    <div #content class="setting-content">
+        <div class="title">{{mTexts.title}}</div>
+        <div class="item-container">
+            <div class="item" (click)="onClickStart()">{{mTexts.workTitle}}</div>
+            <div class="item" *ngIf="mDatas.userStatus==0" (click)="onClickChangeContainer()">{{mTexts.changeWaterContainer}}</div>
+        </div>
+    </div>
+    <div #backdrop class="backdrop" (click)="onClickClose()"></div>
+</div>
