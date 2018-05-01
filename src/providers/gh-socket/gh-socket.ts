@@ -27,12 +27,12 @@ export class GhSocketProvider {
     }
 
     updateUserLocation(user: {}) {
-        this.socket.emit("user-position", user);
+        this.socket.emit("userposition", user);
     }
 
     getUserLocation() {
         return this.socket
-            .fromEvent("user-position")
+            .fromEvent("userposition")
             .map((data: any) => {
                 return data.user;
             });
