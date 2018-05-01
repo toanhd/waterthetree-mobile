@@ -7,21 +7,16 @@ import { IonicPage, NavController, NavParams, AlertController, ToastController, 
 import { Geolocation } from '@ionic-native/geolocation';
 import {
   GoogleMaps, GoogleMap, GoogleMapsEvent, GoogleMapOptions,
-  MapType,
-  LatLng, LatLngBounds, ILatLng,
+   ILatLng,
   Marker, MarkerOptions,
   HtmlInfoWindow,
-  CameraPosition,
-  GroundOverlay, GroundOverlayOptions,
   Spherical,
   LocationService,
-  Encoding,
-  Polyline, PolylineOptions
+  Polyline, PolylineOptions,
+  Circle, CircleOptions
 } from '@ionic-native/google-maps';
 
 import { GhModule } from '../../providers/gh-module/gh-module'
-import { Utils } from '../../providers/app-utils';
-
 import { Tree } from '../../providers/classes/tree';
 import { WaterResource } from '../../providers/classes/water-resourse';
 
@@ -37,16 +32,17 @@ export class GhHomePage {
   @Input() showModal: Subject<any> = new Subject();
 
   map: GoogleMap;
-  mPosition: LatLng;
   me: User;
 
   mTrees: Array<Tree> = [];
+  infoWindow: HtmlInfoWindow;
   isShowAllTrees = false;
   myRadius = 70; // 50m
 
   mWaters: Array<WaterResource> = [];
   isShowAllWaters = true;
   waterRadius = 70;
+  onLoading = false;
 
   mDatas = {
     markers: [
@@ -80,7 +76,7 @@ export class GhHomePage {
 
         let watch = this.mGeolocation.watchPosition({ enableHighAccuracy: true });
         watch.subscribe((data) => {
-          this.onChangePosition(data);
+          this.onChangePosition({ lat: data.coords.latitude, lng: data.coords.longitude });
         });
       }
     });
@@ -88,74 +84,76 @@ export class GhHomePage {
 
 
   loadMap() {
-    let element: HTMLElement = document.getElementById('map');
+    let mapElement: HTMLElement = document.getElementById('map');
 
-    this.map = GoogleMaps.create(element);
-
-    let bachkhoa = new LatLng(21.005147, 105.843311);
-    let ne = new LatLng(21.007658, 105.841205);
-    let sw = new LatLng(21.003739, 105.845724);
-
-    this.map.one(GoogleMapsEvent.MAP_READY).then(() => {
-      console.log('Map is ready!');
-      LocationService.getMyLocation({ enableHighAccuracy: true }).then(location => {
-
-        let mapOptions: GoogleMapOptions = {
-          mapType: 'MAP_TYPE_NORMAL',
-          controls: {
-            compass: false,
-            myLocationButton: false,
-            indoorPicker: false,
-            mapToolbar: false
-          },
-          gestures: {
-            scroll: true,
-            tilt: false,
-            zoom: true,
-            rotate: false,
-          },
-          styles: [
-            {
-              featureType: "transit.station.bus",
-              stylers: [
-                {
-                  "visibility": "off"
-                }
-              ]
-            }
-          ],
-          camera: {
-            target: location.latLng,
-            zoom: 17,
-            tilt: 0
-          },
-          preferences: {
-            zoom: {
-              minZoom: 16,
-              maxZoom: 19
-            },
-            building: false,
+    LocationService.getMyLocation({ enableHighAccuracy: true }).then(location => {
+      let mapOption: GoogleMapOptions = {
+        mapType: 'MAP_TYPE_ROADMAP',
+        controls: {
+          compass: true,
+          myLocation: true,
+          myLocationButton: false,
+          indoorPicker: false,
+          mapToolbar: false,
+          zoom: false
+        },
+        gestures: {
+          scroll: true,
+          tile: false,
+          zoom: true,
+          rotate: true
+        },
+        styles: [
+          {
+            featureType: "transit.line",
+            stylers: [
+              {
+                "visibility": "off"
+              }
+            ]
           }
-        }
-        this.map.setOptions(mapOptions);
-
-        let me: MarkerOptions = {
-          position: location.latLng
-        }
-
-        this.map.addMarker(me).then((marker: Marker) => {
-          this.me.marker = marker;
-        });
-
-        this.onPlanningTrees();
-        this.onPutWaterResourses();
-
-        this.map.animateCamera({
+        ],
+        camera: {
           target: location.latLng,
-          duration: 100
-        });
+          zoom: 17,
+          duration: 1000
+        },
+        preferences: {
+          zoom: {
+            minZoom: 16,
+            maxZoom: 19
+          },
+          building: false,
+        }
+      }
+
+      this.map = GoogleMaps.create(mapElement, mapOption);
+
+      // let me: MarkerOptions = {
+      //   position: location.latLng
+      // }
+
+      // this.map.addMarker(me).then((marker: Marker) => {
+      //   this.me.marker = marker;
+      // });
+
+      let circleOption: CircleOptions = {
+        center: { lat: 21.005618, lng: 105.843347 },
+        radius: 240,
+        strokeColor: "red",
+        strokeWidth: 1,
+        fillColor: "rgba(0,255,0,0.1)"
+      }
+
+      this.map.addCircle(circleOption).then((circle: Circle) => {
 
       });
+
+      this.onPlanningTrees();
+      this.onPutWaterResourses();
+
+      this.onChangePosition(location.latLng);
+
       this.map.on(GoogleMapsEvent.CAMERA_MOVE_END).subscribe(() => {
         this.findTreesAround();
         // this.findWaterAround();
@@ -163,11 +161,9 @@ export class GhHomePage {
     });
   }
 
-  onChangePosition(data) {
-    this.mPosition = new LatLng(data.coords.latitude, data.coords.longitude);
-
+  onChangePosition(latlng: ILatLng) {
     if (this.me) {
-      this.me.move(this.mPosition);
+      this.me.move(latlng);
     }
   }
 
@@ -189,7 +185,7 @@ export class GhHomePage {
         tree.setMarker(marker);
 
         marker.on(GoogleMapsEvent.MARKER_CLICK).subscribe(() => {
-          let htmlInfoWindow = new HtmlInfoWindow();
+          this.infoWindow = new HtmlInfoWindow();
 
           var infoWindow = document.createElement("div");
           infoWindow.setAttribute("width", "100");
@@ -206,67 +202,71 @@ export class GhHomePage {
           btn.setAttribute("background", "white");
           btn.addEventListener("click", () => {
             let distance = Spherical.computeDistanceBetween(this.me.currentLocation, tree.latLng);
-            if (distance > 10) {
-              let toast = this.mToastController.create({
-                message: "Bạn không trong phạm vi tưới cây!!!",
-                duration: 2000
+            // if (distance > 10) {
+            //   let toast = this.mToastController.create({
+            //     message: "Bạn không trong phạm vi tưới cây!!!",
+            //     duration: 2000
+            //   });
+
+            //   toast.present();
+            // }
+            // else {
+            if (this.me.waterContainer.currentLevel <= 0) {
+              let alert = this.mAlertController.create({
+                title: 'Hết nước',
+                subTitle: 'Tìm điểm lấy nước?'
+              });
+              alert.addButton('Cancel');
+              alert.addButton({
+                text: 'Tìm',
+                handler: data => {
+                  this.onLoading = true;
+                  this.showAllWaters();
+                  this.moveToMe();
+                  this.nearest = this.mGhModule.findNearestWaterResourse();
+
+                  this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
+
+                    this.drawDirection(data);
+                    this.onLoading = false;
+                  });
+                }
               });
 
-              toast.present();
+              alert.present();
             }
             else {
-              if (this.me.waterContainer.currentLevel <= 0) {
+              if (tree.id == this.mGhModule.getQuest().tree.id) {
+                this.waterTree(tree, marker);
+              }
+              else {
                 let alert = this.mAlertController.create({
-                  title: 'Hết nước',
-                  subTitle: 'Tìm điểm lấy nước?'
+                  title: 'Thông báo',
+                  subTitle: 'Cây này không phải nhiệm vụ hiện tại. Bạn chắc chắn muốn tưới?',
                 });
+
                 alert.addButton('Cancel');
                 alert.addButton({
-                  text: 'Tìm',
+                  text: 'OK',
                   handler: data => {
-                    this.showAllWaters();
-                    this.nearest = this.mGhModule.findNearestWaterResourse();
-
-                    this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
-                      this.drawDirection(data);
-                    });
+                    this.waterTree(tree, marker);
                   }
                 });
 
                 alert.present();
               }
-              else {
-                if (tree.id == this.mGhModule.getQuest().tree.id) {
-                  this.waterTree(tree, marker);
-                }
-                else {
-                  let alert = this.mAlertController.create({
-                    title: 'Thông báo',
-                    subTitle: 'Cây này không phải nhiệm vụ hiện tại. Bạn chắc chắn muốn tưới?',
-                  });
-
-                  alert.addButton('Cancel');
-                  alert.addButton({
-                    text: 'OK',
-                    handler: data => {
-                      this.waterTree(tree, marker);
-                    }
-                  });
-
-                  alert.present();
-                }
-              }
             }
+            // }
 
           });
 
           infoWindow.appendChild(text);
           if (this.me.status == WorkStatus.WORKING) {
-          infoWindow.appendChild(btn);
+            infoWindow.appendChild(btn);
           }
 
-          htmlInfoWindow.setContent(infoWindow);
-          htmlInfoWindow.open(marker);
+          this.infoWindow.setContent(infoWindow);
+          this.infoWindow.open(marker);
         });
         this.findTreesAround();
       });
@@ -507,7 +507,9 @@ export class GhHomePage {
         "plant_id": tree.id,
         "current_water_level": tree.current_water_level
       }
+      this.onLoading = true;
       this.mGhModule.getHttpService().patch(this.mGhModule.getUrl() + 'plant/', body).subscribe(data => {
+        this.onLoading = false;
         let res = JSON.parse(data["_body"]);
         let toast;
 
@@ -537,6 +539,7 @@ export class GhHomePage {
       });
     }
     catch (e) {
+      this.onLoading = false;
       let alert = this.mAlertController.create({
         title: 'ERROR',
         subTitle: 'Không thể tưới cây',
@@ -596,8 +599,7 @@ export class GhHomePage {
 
   i = 1;
   onClickTitle() {
-    this.i++;
-    this.me.move(new LatLng(20.9924678 + 0.0001 * this.i, 105.8438314));
+    console.log(this.mGhModule.thirstyTrees);
   }
 
   // ---------------------------------------FUNCTION
@@ -608,6 +610,7 @@ export class GhHomePage {
       this.me.emptyWaterContainer();
       this.onChangeWaterLevel();
       this.deletePolyline();
+      this.findTreesAround();
     }
     else {
       this.onChooseWaterContainer();
@@ -625,20 +628,21 @@ export class GhHomePage {
     let distance = Spherical.computeDistanceBetween(this.me.currentLocation, this.nearest.latLng);
 
     if (this.me.waterContainer.currentLevel == 0) {
-      if (distance > 10) {
-        let toast = this.mToastController.create({
-          message: "Bạn không trong phạm vi lấy nước!!!",
-          duration: 2000
-        });
+      // if (distance > 10) {
+      //   let toast = this.mToastController.create({
+      //     message: "Bạn không trong phạm vi lấy nước!!!",
+      //     duration: 2000
+      //   });
 
-        toast.present();
-      }
-      else {
-        this.me.fillWaterContainer();
-        this.onChangeWaterLevel();
-        this.hideAllWaters();
-        this.onDoingQuest();
-      }
+      //   toast.present();
+      // }
+      // else {
+      this.me.fillWaterContainer();
+      this.onChangeWaterLevel();
+      this.hideAllWaters();
+      this.onDoingQuest();
+      this.moveToMe();
+      // }
     }
   }
 
@@ -692,7 +696,9 @@ export class GhHomePage {
           else if (data == "10") {
             this.me.waterContainer = new WaterContainer(10, 10);
           }
+          this.onLoading = true;
           this.mGhModule.startWorking().then(() => {
+            this.onLoading = false;
             this.onChangeWaterLevel();
             this.onDoingQuest();
           }).catch(() => {
@@ -724,9 +730,10 @@ export class GhHomePage {
   }
 
   onDoingQuest() {
-    console.log(this.mGhModule.getQuest());
-
+    this.onLoading = true;
     this.mGhModule.directionTo(this.me.currentLocation, this.mGhModule.getQuest().tree.latLng).then((data: Array<ILatLng>) => {
+
+      this.onLoading = false;
       this.drawDirection(data);
     });
   }
@@ -762,7 +769,9 @@ export class GhHomePage {
         alert.addButton({
           text: 'Hoàn thành nhiệm vụ',
           handler: data => {
+            this.infoWindow.close();
             this.mGhModule.onQuestDone().then(() => {
+              this.moveToMe();
               this.onDoingQuest();
             });
           }
@@ -772,5 +781,23 @@ export class GhHomePage {
     }
   }
 
+  moveToMe() {
+    LocationService.getMyLocation({ enableHighAccuracy: true }).then(location => {
+      this.map.animateCamera({
+        target: location.latLng,
+        duration: 200
+      });
+    });
+  }
 
+  onClickMyLocation() {
+    this.moveToMe();
+  }
+
+  onClickMyBK() {
+    this.map.animateCamera({
+      target: { lat: 21.005618, lng: 105.843347 },
+      duration: 200
+    });
+  }
 }

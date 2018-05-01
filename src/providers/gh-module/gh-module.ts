@@ -1,5 +1,5 @@
 import { Quest } from './../classes/quest';
-import { Http, Headers } from '@angular/http';
+import { Http, Headers, Response } from '@angular/http';
 import { Injectable, Query } from '@angular/core';
 
 import { Spherical, LatLng, Encoding } from '@ionic-native/google-maps';
@@ -8,6 +8,8 @@ import { Tree } from '../classes/tree';
 import { TreeType } from '../classes/tree-type';
 import { WaterResource } from '../classes/water-resourse';
 import { User } from '../classes/user';
+
+import { Observable } from 'rxjs/Observable';
 
 declare var google;
 
@@ -24,13 +26,38 @@ export class GhModule {
   waters: Array<WaterResource> = [];
   quest: Quest;
 
+  isConnecting = false;
+
   constructor(public http: Http) {
     console.log('Hello GhModule Provider');
     // this.getDataConfig();
     // this.loadServerData();
   }
 
-  login() {
+  login(email: string, password: string) {
+    let body = {
+      "email": email,
+      "password": password
+    }
+
+    let headers = new Headers({ 'Content-Type': 'application/json' });
+    console.log(body);
+
+    this.getHttpService().post(this.url + 'authentication/login', body, { headers: headers })
+
+      .subscribe(data => {
+
+      })
+
+
+    // return this.http.post(this.url + 'authentication/register', body, { headers: headers })
+    //   .map((response: Response) => {
+    //     return {
+    //       response: response.json(),
+    //       code: response.status
+    //     }
+    //   })
+    //   .catch((error: Response) => Observable.throw(error.json()));
 
   }
 
@@ -99,6 +126,9 @@ export class GhModule {
             }
           });
 
+          // this.arrangeTrees(this.thirstyTrees);
+          // this.arrangeTrees(this.trees);
+
           i++;
           if (i == 2) {
             res();
@@ -126,8 +156,6 @@ export class GhModule {
             }
           }
           else {
-            console.log("rej");
-
             rej();
           }
         });
@@ -174,8 +202,11 @@ export class GhModule {
 
   updateQuests() {
     this.quest = null;
-    let tempTree: Tree;
-    let tempDistance: number = -1;
+    let tempTree = {
+      tree: null,
+      ratio: 0,
+      distance: -1
+    };
 
     return new Promise((res, rej) => {
       if (this.mUser.currentLocation) {
@@ -188,17 +219,20 @@ export class GhModule {
           relevantTrees = this.trees;
         }
 
-        relevantTrees.forEach(tree => {
-          let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
 
-          if (!tempTree || (tempTree && (distance < tempDistance))) {
-            tempTree = tree;
-            tempDistance = distance;
+        relevantTrees.forEach((tree: Tree) => {
+          let distance = Spherical.computeDistanceBetween(this.mUser.currentLocation, tree.latLng);
+          let ratio = tree.current_water_level / tree.max_water_level;
+
+          if (!tempTree.tree || (tempTree.tree && (distance < tempTree.distance) && (ratio < tempTree.ratio))) {
+            tempTree.tree = tree;
+            tempTree.ratio = tree.current_water_level / tree.max_water_level;
+            tempTree.distance = distance;
           }
         });
 
         if (tempTree) {
-          this.quest = new Quest(tempTree, tempDistance);
+          this.quest = new Quest(tempTree.tree, tempTree.distance);
           res();
         }
         else {
@@ -223,8 +257,10 @@ export class GhModule {
   }
 
   stopWorking() {
-    this.mUser.stopWorking();
-
+    this.quest.done().then(() => {
+      this.mUser.stopWorking();
+      this.quest = null;
+    });
   }
 
   // function
@@ -273,11 +309,7 @@ export class GhModule {
   onQuestDone() {
     return new Promise((res, rej) => {
       this.quest.done().then(() => {
-        console.log(this.thirstyTrees);
-        console.log(this.thirstyTrees.indexOf(this.quest.tree));
-        
         this.thirstyTrees.splice(this.thirstyTrees.indexOf(this.quest.tree), 1);
-        console.log(this.thirstyTrees);
         this.updateQuests().then(() => {
           res();
         }).catch(() => {
@@ -285,5 +317,20 @@ export class GhModule {
         });
       });
     });
+  }
+
+  private arrangeTrees(arr: Array<Tree>) {
+    for (let i = 0; i < arr.length - 1; i++) {
+      for (let j = i + 1; j < arr.length; j++) {
+        let ratio1 = arr[i].current_water_level / arr[i].max_water_level;
+        let ratio2 = arr[j].current_water_level / arr[j].max_water_level;
+
+        if (ratio1 > ratio2) {
+          let temp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = temp;
+        }
+      }
+    }
   }
 }

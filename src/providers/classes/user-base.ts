@@ -1,4 +1,4 @@
-import { Marker, LatLng } from '@ionic-native/google-maps';
+import { Marker, LatLng, ILatLng } from '@ionic-native/google-maps';
 
 export enum WorkStatus {
     WORKING, ONLINE, OFFLINE
@@ -29,12 +29,12 @@ export class UserBase {
         this.currentLocation = latLng;
     }
 
-    move(latLng: LatLng) {
+    move(latLng: ILatLng) {
         if (this.isRunning) {
             this.stop();
         }
 
-        this.newLocation = latLng;
+        this.newLocation = new LatLng(latLng.lat, latLng.lng);
         this.calculateVelocity(this.currentLocation, this.newLocation);
         this.run();
     }

@@ -21,6 +21,12 @@
 
 <ion-content>
     <div #map id="map">
+        <div class="map-btn my-location" (click)="onClickMyLocation()">
+            <img src="./assets/imgs/my-location.png">
+        </div>
+        <div class="map-btn my-bk" (click)="onClickMyBK()">
+            <div>BK</div>
+        </div>
         <div id="water-container" (click)="fillWaterContainer()">
             <div id="water-level"></div>
             <div class="level" *ngIf="me.waterContainer">{{me.waterContainer.currentLevel}}</div>
@@ -28,5 +34,22 @@
     </div>
 
 </ion-content>
+
+<div class="loading" [class.hidden]="!onLoading">
+
+    <div id="spinner-container">
+        <div class="lds-roller">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+
+</div>
 
 <my-modal [show]="showModal" (startWork)="onChangeWorkStatus()" (changeContainer)="onChooseWaterContainer()"></my-modal>
