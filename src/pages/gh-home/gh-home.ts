@@ -1,7 +1,7 @@
-import {WaterContainer} from './../../providers/classes/water-container';
+import {WaterContainer} from '../../providers/classes/water-container';
 import {Subject} from 'rxjs/Subject';
-import {WorkStatus} from './../../providers/classes/user-base';
-import {User} from './../../providers/classes/user';
+import {WorkStatus} from '../../providers/classes/user-base';
+import {User} from '../../providers/classes/user';
 import {Component, ViewChild, ElementRef, Input} from '@angular/core';
 import {IonicPage, NavController, NavParams, AlertController, ToastController, Platform} from 'ionic-angular';
 import {Geolocation} from '@ionic-native/geolocation';
@@ -19,6 +19,7 @@ import {
 import {GhModule} from '../../providers/gh-module/gh-module'
 import {Tree} from '../../providers/classes/tree';
 import {WaterResource} from '../../providers/classes/water-resourse';
+import {GhSocketProvider} from "../../providers/gh-socket/gh-socket";
 
 
 @IonicPage()
@@ -60,14 +61,54 @@ export class GhHomePage {
                 public mAlertController: AlertController,
                 public mGhModule: GhModule,
                 private mPlatform: Platform,
-                public navParams: NavParams) {
+                public navParams: NavParams,
+                private ghSocketProvider: GhSocketProvider) {
         this.mTrees = mGhModule.getTrees();
         this.mWaters = mGhModule.getWaters();
 
         this.me = mGhModule.getUser();
     }
 
+
+    tempWaterTree() {
+
+        let tree = this.mTrees[0];
+        // tree.current_water_level++;
+        // console.log(tree);
+        let body = {
+            "plant_id": tree.id,
+            "current_water_level": tree.current_water_level
+        };
+        this.onLoading = true;
+        this.mGhModule.getHttpService().patch(this.mGhModule.getUrl() + 'plant/', body).subscribe(data => {
+            // console.log(JSON.parse(data["_body"]));
+            if (data.status == 201) {
+                tree.current_water_level = JSON.parse(data["_body"]).plantResult.current_water_level;
+            }
+            else {
+                // console.log("ko tuoi dc");
+            }
+            this.onLoading = false;
+        });
+        this.ghSocketProvider.updateWaterLevel(
+            {
+                current_water_level: tree.current_water_level,
+                id: tree.id
+            });
+    }
+
+
     ionViewDidEnter() {
+        this.ghSocketProvider.getWaterLevel()
+            .subscribe(tree => {
+                console.log(tree)
+            });
+
+        this.ghSocketProvider.getUserLocation()
+            .subscribe(user => {
+                console.log(user)
+            });
+
         this.mPlatform.ready().then(() => {
             if (this.mPlatform.is('android') || this.mPlatform.is('ios')) {
                 if (!this.map) {
@@ -443,9 +484,9 @@ export class GhHomePage {
             //     "long": tree.latLng.lng,
             //     "current_water_level": tree.current_water_level,
             //     "max_water_level": tree.max_water_level,
-            //   }
-
-            //   this.mGhModule.getHttpService().post(this.url + 'plant/', body).subscribe(data => {
+            //   };
+            //
+            //   this.mGhModule.getHttpService().post(this.mGhModule.getUrl() + 'plant/', body).subscribe(data => {
             //     console.log(data);
             //   });
             // });
@@ -504,13 +545,15 @@ export class GhHomePage {
     }
 
     onUpdateWater(tree: Tree) {
+        // this.ghSocketProvider.updateWaterLevel(tree.current_water_level);
         try {
             let body = {
                 "plant_id": tree.id,
                 "current_water_level": tree.current_water_level
-            }
+            };
             this.onLoading = true;
             this.mGhModule.getHttpService().patch(this.mGhModule.getUrl() + 'plant/', body).subscribe(data => {
+                console.log("water the tree:", data);
                 this.onLoading = false;
                 let res = JSON.parse(data["_body"]);
                 let toast;

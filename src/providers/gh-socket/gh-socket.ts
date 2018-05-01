@@ -14,15 +14,27 @@ export class GhSocketProvider {
     constructor(private socket: Socket) {
     }
 
-    sendMessage(msg: string) {
-        this.socket.emit("msg", msg);
+    updateWaterLevel(tree: {}) {
+        this.socket.emit("waterlvl", tree);
     }
 
-    getMessage() {
+    getWaterLevel() {
         return this.socket
-            .fromEvent("msg")
-            .map((data:any) => {
-                return data.msg;
+            .fromEvent("waterlvl")
+            .map((data: any) => {
+                return data.tree;
+            });
+    }
+
+    updateUserLocation(user: {}) {
+        this.socket.emit("user-position", user);
+    }
+
+    getUserLocation() {
+        return this.socket
+            .fromEvent("user-position")
+            .map((data: any) => {
+                return data.user;
             });
     }
 }

@@ -15,8 +15,8 @@ import {Geolocation} from '@ionic-native/geolocation';
 import {GhSocketProvider} from '../providers/gh-socket/gh-socket';
 import {SocketIoModule, SocketIoConfig} from 'ng-socket-io';
 
-// const config: SocketIoConfig = {url: 'http://localhost:3000', options: {}};
-const config: SocketIoConfig = {url: 'http://52.148.83.12:8080/', options: {}};
+const config: SocketIoConfig = {url: 'http://localhost:3000', options: {}};
+// const config: SocketIoConfig = {url: 'http://52.148.83.12:8080/', options: {}};
 
 @NgModule({
     declarations: [

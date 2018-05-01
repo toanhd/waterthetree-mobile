@@ -16,7 +16,8 @@ declare var google;
 
 @Injectable()
 export class GhModule {
-    url = "http://52.148.83.12:8080/";
+    // url = "http://52.148.83.12:8080/";
+    url = "http://localhost:3000/";
 
     private directionService = new google.maps.DirectionsService();
 
@@ -41,7 +42,7 @@ export class GhModule {
             "password": password
         };
         let headers = new Headers({'Content-Type': 'application/json'});
-        
+
         return this.getHttpService().post(this.url + 'authentication/login', body, {headers: headers})
             .map((response: Response) => {
                 return {
