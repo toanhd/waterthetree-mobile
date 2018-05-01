@@ -9,7 +9,7 @@ import {GhLoadingPage} from "../pages/gh-loading/gh-loading";
     templateUrl: 'app.html'
 })
 export class MyApp {
-    rootPage: any = "GhLoadingPage";
+    rootPage: any = "GhLoginPage";
 
     constructor(platform: Platform, statusBar: StatusBar, splashScreen: SplashScreen) {
         platform.ready().then(() => {

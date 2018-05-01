@@ -14,6 +14,28 @@ export class Tree {
     status: number;
     private marker: Marker;
 
+    private trees = [
+        "Ô cỏ",
+        "Cây Phượng vĩ",
+        "Cây Cau lùn",
+        "Cây Sấu",
+        "Cây Bằng Lăng",
+        "Cây Bàng",
+        "Cây Hoa Sứ",
+        "Cây Sưa",
+        "Cây Phượng nhỏ",
+        "Cây Tùng",
+        "Cây Bàng nhỏ",
+        "Cây Đa",
+        "Cây Phong",
+        "Cây Xà cừ",
+        "Cây Liễu",
+        "Cây Hoa Sữa",
+        "Cây Gạo",
+        "Cây Sao đen",
+        "Cây Sấu nhỏ",
+        "Cây Sưa đỏ"
+    ]
 
     constructor() {
         this.id = "";
@@ -47,8 +69,8 @@ export class Tree {
             this.max_water_level = data.max_water_level;
             this.current_water_level = data.current_water_level;
 
-            this.type_id = this.size_id == 1 ? 3 : (this.size_id == 2 ? 2 : 1);
-            this.type_name = this.size_id == 1 ? "Ô cỏ" : (this.size_id == 2 ? "Cây cau lùn" : "Cây Phượng vĩ");;
+            this.type_id = this.size_id;
+            this.type_name = this.trees[this.size_id - 1];
         }
     }
 
