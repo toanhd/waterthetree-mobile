@@ -40,9 +40,8 @@ export class GhModule {
             "email": email,
             "password": password
         };
-
         let headers = new Headers({'Content-Type': 'application/json'});
-        // console.log(body);
+        
         return this.getHttpService().post(this.url + 'authentication/login', body, {headers: headers})
             .map((response: Response) => {
                 return {
@@ -50,16 +49,6 @@ export class GhModule {
                     code: response.status
                 }
             }).catch((error: Response) => Observable.throw(error.json()));
-
-
-        // return this.http.post(this.url + 'authentication/register', body, { headers: headers })
-        //   .map((response: Response) => {
-        //     return {
-        //       response: response.json(),
-        //       code: response.status
-        //     }
-        //   })
-        //   .catch((error: Response) => Observable.throw(error.json()));
 
     }
 

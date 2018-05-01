@@ -23,7 +23,7 @@
         </ion-item>
         <div *ngIf="password.touched && password.invalid" class="errors">
             <div *ngIf="password.errors.required">Password is required.</div>
-            <div *ngIf="password.errors.minlength">Password should be minimum 6 characters.</div>
+            <div *ngIf="password.errors.minlength">Password should be minimum {{password.errors.minlength.requiredLength}} characters.</div>
         </div>
     </form>
     <button ion-button full color="dark" type="submit" [disabled]="!form.valid" (click)="onClickLogin()">LOGIN</button>
