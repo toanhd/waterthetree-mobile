@@ -81,4 +81,60 @@ export class Tree {
     getMarker() {
         return this.marker;
     }
+
+    beWatered() {
+        this.current_water_level += 1;
+    }
+
+    canBeWatered() {
+        return this.current_water_level < this.max_water_level;
+    }
+
+    getRatio() {
+        return this.current_water_level / this.max_water_level;
+    }
+
+    setCurrentWater(waterLevel: number) {
+        this.current_water_level = waterLevel;
+    }
+
+
+    getIconUrl(visible?: boolean) {
+        let markers = [
+            "small-",
+            "medium-",
+            "large-"
+        ]
+
+        let result = './assets/imgs/';
+
+        if (this.size_id == 1) {
+            result += "small-";
+        }
+        else if (this.size_id % 2 != 0) {
+            result += "medium-";
+        }
+        else {
+            result += "large-";
+        }
+
+        if (this.getRatio() >= 0.75) {
+            result += "high";
+        }
+        else if (this.getRatio() >= 0.5) {
+            result += "medium";
+        }
+        else {
+            result += "low";
+        }
+
+        if (visible) {
+            result += ".png";
+        }
+        else {
+            result += "-o.png";
+        }
+
+        return result;
+    }
 }

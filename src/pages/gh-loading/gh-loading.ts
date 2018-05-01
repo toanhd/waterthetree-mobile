@@ -19,9 +19,8 @@ export class GhLoadingPage {
   }
 
   ionViewDidEnter() {
-    console.log('ionViewDidLoad GhLoadingPage');
     this.onLoginProcess();
-     }
+  }
 
   onLoginProcess() {
     this.mGhModule.loadServerData().then(() => {

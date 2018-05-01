@@ -14,7 +14,7 @@ export class Quest {
     constructor(private _tree: Tree, public _distance: number) {
         if (_tree.getMarker()) {
             let icon: MarkerIcon = {
-                url: './assets/imgs/' + (this.mDatas.markers[_tree.size_id] + (((_tree.current_water_level / _tree.max_water_level >= 0.75) ? "high" : ((_tree.current_water_level / _tree.max_water_level >= 0.5 ? "medium" : "low"))) + ".png")),
+                url: _tree.getIconUrl(true),
                 size: {
                     width: 25,
                     height: 35
@@ -29,7 +29,7 @@ export class Quest {
         return new Promise((res, rej) => {
             if (this._tree.getMarker()) {
                 let icon: MarkerIcon = {
-                    url: './assets/imgs/' + (this.mDatas.markers[this._tree.size_id] + (((this._tree.current_water_level / this._tree.max_water_level >= 0.75) ? "high" : ((this._tree.current_water_level / this._tree.max_water_level >= 0.5 ? "medium" : "low"))) + "-o.png")),
+                    url: this._tree.getIconUrl(),
                     size: {
                         width: 15,
                         height: 25

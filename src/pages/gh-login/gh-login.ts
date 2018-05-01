@@ -29,11 +29,6 @@ export class GhLoginPage {
     public navParams: NavParams) {
   }
 
-  ionViewDidEnter() {
-    this.mGhModule.getDataConfig();
-
-  }
-
   get username() {
     return this.form.get('username');
   }
@@ -47,14 +42,23 @@ export class GhLoginPage {
       this.mGhModule.login(this.username.value, this.password.value)
         .subscribe(
           data => {
-            console.log(data);
-
-            this.navCtrl.push("GhLoadingPage");
+            if (data['response'].login == true) {
+              this.navCtrl.push("GhLoadingPage");
+            }
+            else {
+              let alert = this.mAlert.create({
+                title: "Errors",
+                message: "Đăng nhập thất bại, vui lòng kiểm tra lại thông tin",
+                buttons: ["OK"]
+              });
+              alert.present();
+            }
           },
           err => {
             let alert = this.mAlert.create({
               title: "Errors",
-              message: err.title
+              message: err.title,
+              buttons: ["OK"]
             });
             alert.present();
           }
@@ -106,10 +110,10 @@ export class GhLoginPage {
     //   }
 
     //   tree.current_water_level = Math.floor((Math.random() * tree.max_water_level) + 1);
-      
+
     //   this.mTrees.push(tree);
     // });
     // console.log(this.mTrees);
-    
+
   }
 }

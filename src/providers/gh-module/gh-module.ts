@@ -234,6 +234,20 @@ export class GhModule {
     });
   }
 
+  requestWaterTree(tree: Tree) {
+    let body = {
+      "plant_id": tree.id,
+      "current_water_level": tree.current_water_level
+    };
+    return this.getHttpService().patch(this.getUrl() + 'plant/', body)
+      .map((res: Response) => res.json())
+      .catch(e => {
+        console.log("error", e);
+
+        return Observable.throw(e)
+      })
+  }
+
   startWorking() {
     return new Promise((res, rej) => {
       this.mUser.startWorking();
