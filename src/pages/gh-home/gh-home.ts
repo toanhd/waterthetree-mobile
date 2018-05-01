@@ -84,24 +84,37 @@ export class GhHomePage {
             // console.log(JSON.parse(data["_body"]));
             if (data.status == 201) {
                 tree.current_water_level = JSON.parse(data["_body"]).plantResult.current_water_level;
+                this.ghSocketProvider.updateWaterLevel(
+                    {
+                        current_water_level: tree.current_water_level,
+                        id: tree.id
+                    });
             }
             else {
                 // console.log("ko tuoi dc");
             }
             this.onLoading = false;
         });
-        this.ghSocketProvider.updateWaterLevel(
-            {
-                current_water_level: tree.current_water_level,
-                id: tree.id
-            });
     }
 
+    tempUser = {
+        id: "",
+        location: {
+            lat: 0,
+            lng: 0
+        }
+    }
 
     ionViewDidEnter() {
+        this.tempUser.id = "" + Math.floor((Math.random() * 1000) + 1);
         this.ghSocketProvider.getWaterLevel()
             .subscribe(tree => {
-                console.log(tree)
+                console.log(tree);
+                for (let i = 0; i < this.mTrees.length; i++) {
+                    if (this.mTrees[i].id == tree.id) {
+                        this.mTrees[i].current_water_level = tree.current_water_level;
+                    }
+                }
             });
 
         this.ghSocketProvider.getUserLocation()
@@ -645,7 +658,13 @@ export class GhHomePage {
     i = 1;
 
     onClickTitle() {
-        console.log(this.mGhModule.thirstyTrees);
+        console.log("My location", this.tempUser);
+        this.tempUser.location = {
+            lat: Math.random(),
+            lng: Math.random()
+        };
+
+        this.ghSocketProvider.updateUserLocation(this.tempUser.id, this.tempUser.location);
     }
 
     // ---------------------------------------FUNCTION

@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {Socket} from 'ng-socket-io';
 import 'rxjs/add/operator/map';
+import {ILatLng} from "@ionic-native/google-maps";
 
 /*
   Generated class for the GhSocketProvider provider.
@@ -26,7 +27,11 @@ export class GhSocketProvider {
             });
     }
 
-    updateUserLocation(user: {}) {
+    updateUserLocation(id: string, location: ILatLng) {
+        let user= {
+            id: id,
+            location: location
+        };
         this.socket.emit("userposition", user);
     }
 
