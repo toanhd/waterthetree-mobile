@@ -5,7 +5,6 @@ import { WaterContainer } from './water-container';
 
 export class User extends UserBase {
     private _waterContainer: WaterContainer;
-    private _quest: Tree;
 
     constructor(private uid: string) {
         super(uid);

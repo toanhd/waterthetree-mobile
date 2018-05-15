@@ -100,12 +100,6 @@ export class Tree {
 
 
     getIconUrl(visible?: boolean) {
-        let markers = [
-            "small-",
-            "medium-",
-            "large-"
-        ]
-
         let result = './assets/imgs/';
 
         if (this.size_id == 1) {

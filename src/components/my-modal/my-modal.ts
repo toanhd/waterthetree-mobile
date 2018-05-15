@@ -16,6 +16,7 @@ export class MyModalComponent {
 
   @Output('startWork') startWork = new EventEmitter();
   @Output('changeContainer') changeContainer = new EventEmitter();
+  @Output('updateRoute') updateRoute = new EventEmitter();
 
   mDatas = {
     userStatus: -1
@@ -24,11 +25,12 @@ export class MyModalComponent {
   mTexts = {
     title: "Settings",
     workTitle: "Bắt đầu phiên làm việc",
-    changeWaterContainer: "Thay đổi bình tưới"
+    changeWaterContainer: "Thay đổi bình tưới",
+    updateRoute: "Cập nhật đường đi"
   }
 
 
-  constructor(private mElementRef: ElementRef) {
+  constructor() {
   }
 
   ngOnInit() {
@@ -72,6 +74,11 @@ export class MyModalComponent {
 
   onClickChangeContainer(){
     this.changeContainer.emit();
+    this.hideModal();
+  }
+
+  onClickUpdateRoute(){
+    this.updateRoute.emit();
     this.hideModal();
   }
 }

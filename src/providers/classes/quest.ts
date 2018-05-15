@@ -3,14 +3,6 @@ import { MarkerIcon } from '@ionic-native/google-maps';
 
 export class Quest {
 
-    private mDatas = {
-        markers: [
-            "",
-            "small-",
-            "medium-",
-            "large-"
-        ]
-    }
     constructor(private _tree: Tree, public _distance: number) {
         if (_tree.getMarker()) {
             let icon: MarkerIcon = {

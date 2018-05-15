@@ -43,6 +43,7 @@ export class GhLoginPage {
         .subscribe(
           data => {
             if (data['response'].login == true) {
+              this.mGhModule.setUserId(data['response'].userID);
               this.navCtrl.push("GhLoadingPage");
             }
             else {

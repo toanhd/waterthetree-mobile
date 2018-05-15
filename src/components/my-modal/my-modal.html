@@ -4,6 +4,7 @@
         <div class="item-container">
             <div class="item" (click)="onClickStart()">{{mTexts.workTitle}}</div>
             <div class="item" *ngIf="mDatas.userStatus==0" (click)="onClickChangeContainer()">{{mTexts.changeWaterContainer}}</div>
+            <div class="item" *ngIf="mDatas.userStatus==0" (click)="onClickUpdateRoute()">{{mTexts.updateRoute}}</div>
         </div>
     </div>
     <div #backdrop class="backdrop" (click)="onClickClose()"></div>

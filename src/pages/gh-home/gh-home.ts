@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs/Observable';
+import { UserBase } from './../../providers/classes/user-base';
 import { WaterContainer } from '../../providers/classes/water-container';
 import { Subject } from 'rxjs/Subject';
 import { WorkStatus } from '../../providers/classes/user-base';
@@ -14,7 +14,7 @@ import {
   Spherical,
   LocationService,
   Polyline, PolylineOptions,
-  Circle, CircleOptions
+  Circle, CircleOptions, LatLng
 } from '@ionic-native/google-maps';
 
 import { GhModule } from '../../providers/gh-module/gh-module'
@@ -66,39 +66,9 @@ export class GhHomePage {
     private ghSocketProvider: GhSocketProvider) {
     this.mTrees = mGhModule.getTrees();
     this.mWaters = mGhModule.getWaters();
-    console.log(this.mTrees);
-
-
     this.me = mGhModule.getUser();
   }
 
-
-  tempWaterTree() {
-
-    let tree = this.mTrees[0];
-    // tree.current_water_level++;
-    // console.log(tree);
-    let body = {
-      "plant_id": tree.id,
-      "current_water_level": tree.current_water_level
-    };
-    this.onLoading = true;
-    this.mGhModule.getHttpService().patch(this.mGhModule.getUrl() + 'plant/', body).subscribe(data => {
-      // console.log(JSON.parse(data["_body"]));
-      if (data.status == 201) {
-        tree.current_water_level = JSON.parse(data["_body"]).plantResult.current_water_level;
-        this.ghSocketProvider.updateWaterLevel(
-          {
-            current_water_level: tree.current_water_level,
-            id: tree.id
-          });
-      }
-      else {
-        // console.log("ko tuoi dc");
-      }
-      this.onLoading = false;
-    });
-  }
 
   tempUser = {
     id: "",
@@ -111,18 +81,61 @@ export class GhHomePage {
   ionViewDidEnter() {
     this.tempUser.id = "" + Math.floor((Math.random() * 1000) + 1);
     this.ghSocketProvider.getWaterLevel()
-      .subscribe(tree => {
-        console.log(tree);
+      .subscribe((tree: Tree) => {
         for (let i = 0; i < this.mTrees.length; i++) {
           if (this.mTrees[i].id == tree.id) {
             this.mTrees[i].setCurrentWater(tree.current_water_level);
+
+            this.mTrees[i].getMarker().setIcon({
+              url: this.mTrees[i].getIconUrl(tree.id == this.mGhModule.getQuest().tree.id),
+              size: {
+                width: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 25 : 15,
+                height: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 35 : 25
+              },
+            });
+            if (tree.id == this.mGhModule.getQuest().tree.id) {
+              this.updateInfoWindow(this.mTrees[i]);
+            }
+            break;
           }
         }
       });
 
     this.ghSocketProvider.getUserLocation()
       .subscribe(user => {
-        console.log(user)
+        let u = this.mGhModule.getUserById(user.id);
+
+        if (u) {
+          u.move(user.location);
+          u.updateTime(new Date().toString());
+        }
+        else {
+          let u = new UserBase(user.id);
+          u.setLocation(new LatLng(user.location.lat, user.location.lng));
+          u.updateTime(new Date().toString());
+          this.mGhModule.addUser(u);
+
+          let markerOpt: MarkerOptions = {
+            position: user.location
+          }
+
+          if (this.map) {
+            this.map.addMarker(markerOpt).then(marker => {
+              u.setMarker(marker);
+
+              marker.on(GoogleMapsEvent.MARKER_CLICK).subscribe(() => {
+                if (this.infoWindow) {
+                  this.infoWindow.close();
+                }
+                this.infoWindow = new HtmlInfoWindow();
+                this.infoWindow.setContent("UserID: " + user.id + "<br>" + "Last update: " + u.lastUpdate);
+
+                this.infoWindow.open(marker);
+              });
+            });
+          }
+        }
+
       });
 
     this.mPlatform.ready().then(() => {
@@ -137,8 +150,6 @@ export class GhHomePage {
 
 
   loadMap() {
-    console.log("loadmap");
-
     let mapElement: HTMLElement = document.getElementById('map');
     setTimeout(() => {
       if (!this.map) {
@@ -228,6 +239,7 @@ export class GhHomePage {
   onChangePosition(latlng: ILatLng) {
     if (this.me) {
       this.me.move(latlng);
+      this.ghSocketProvider.updateUserLocation(this.me.id, latlng);
     }
   }
 
@@ -250,6 +262,9 @@ export class GhHomePage {
         tree.setMarker(marker);
 
         marker.on(GoogleMapsEvent.MARKER_CLICK).subscribe(() => {
+          if (this.infoWindow) {
+            this.infoWindow.close();
+          }
           this.infoWindow = new HtmlInfoWindow();
 
           var infoWindow = document.createElement("div");
@@ -267,62 +282,63 @@ export class GhHomePage {
           btn.setAttribute("background", "white");
           btn.addEventListener("click", () => {
             if (!this.onLoading) {
-              let distance = Spherical.computeDistanceBetween(this.me.currentLocation, tree.latLng);
-              // if (distance > 10) {
-              //   let toast = this.mToastController.create({
-              //     message: "Bạn không trong phạm vi tưới cây!!!",
-              //     duration: 2000
-              //   });
-
-              //   toast.present();
-              // }
-              // else {
-              if (this.me.waterContainer.currentLevel <= 0) {
-                let alert = this.mAlertController.create({
-                  title: 'Hết nước',
-                  subTitle: 'Tìm điểm lấy nước?'
-                });
-                alert.addButton('Cancel');
-                alert.addButton({
-                  text: 'Tìm',
-                  handler: data => {
-                    this.onLoading = true;
-                    this.showAllWaters();
-                    this.moveToMe();
-                    this.nearest = this.mGhModule.findNearestWaterResourse();
-
-                    this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
-
-                      this.drawDirection(data);
-                      this.onLoading = false;
-                    });
-                  }
+              let distance = 0;
+              // let distance = Spherical.computeDistanceBetween(this.me.currentLocation, tree.latLng);
+              if (distance > 10) {
+                let toast = this.mToastController.create({
+                  message: "Bạn không trong phạm vi tưới cây!!!",
+                  duration: 2000
                 });
 
-                alert.present();
+                toast.present();
               }
               else {
-                if (tree.id == this.mGhModule.getQuest().tree.id) {
-                  this.waterTree(tree, marker);
-                }
-                else {
+                if (this.me.waterContainer.currentLevel <= 0) {
                   let alert = this.mAlertController.create({
-                    title: 'Thông báo',
-                    subTitle: 'Cây này không phải nhiệm vụ hiện tại. Bạn chắc chắn muốn tưới?',
+                    title: 'Hết nước',
+                    subTitle: 'Tìm điểm lấy nước?'
                   });
-
                   alert.addButton('Cancel');
                   alert.addButton({
-                    text: 'OK',
+                    text: 'Tìm',
                     handler: data => {
-                      this.waterTree(tree, marker);
+                      this.onLoading = true;
+                      this.showAllWaters();
+                      this.moveToMe();
+                      this.nearest = this.mGhModule.findNearestWaterResourse();
+
+                      this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
+
+                        this.drawDirection(data);
+                        this.onLoading = false;
+                      });
                     }
                   });
 
                   alert.present();
                 }
+                else {
+                  if (tree.id == this.mGhModule.getQuest().tree.id) {
+                    this.waterTree(tree);
+                  }
+                  else {
+                    let alert = this.mAlertController.create({
+                      title: 'Thông báo',
+                      subTitle: 'Cây này không phải nhiệm vụ hiện tại. Bạn chắc chắn muốn tưới?',
+                    });
+
+                    alert.addButton('Cancel');
+                    alert.addButton({
+                      text: 'OK',
+                      handler: data => {
+                        this.waterTree(tree);
+                      }
+                    });
+
+                    alert.present();
+                  }
+                }
               }
-              // }
             }
           });
 
@@ -337,6 +353,97 @@ export class GhHomePage {
         this.findTreesAround();
       });
     });
+  }
+
+  updateInfoWindow(tree: Tree) {
+    if (this.infoWindow) {
+      this.infoWindow.close();
+    }
+
+    this.infoWindow = new HtmlInfoWindow();
+
+    var infoWindow = document.createElement("div");
+    infoWindow.setAttribute("width", "100");
+
+    let text = document.createElement("div");
+    text.innerHTML = "id: " + tree.id + "<br>"
+      + "Loại cây: " + tree.type_name + "<br>"
+      + "lượng nước hiện tại: " + tree.current_water_level + "/" + tree.max_water_level;
+    text.setAttribute("id", "info-text");
+
+    let btn = document.createElement("button");
+    btn.innerHTML = "Tưới cây";
+    btn.setAttribute("padding", "1");
+    btn.setAttribute("background", "white");
+    btn.addEventListener("click", () => {
+      if (!this.onLoading) {
+        let distance = 0;
+        // let distance = Spherical.computeDistanceBetween(this.me.currentLocation, tree.latLng);
+        if (distance > 10) {
+          let toast = this.mToastController.create({
+            message: "Bạn không trong phạm vi tưới cây!!!",
+            duration: 2000
+          });
+
+          toast.present();
+        }
+        else {
+          if (this.me.waterContainer.currentLevel <= 0) {
+            let alert = this.mAlertController.create({
+              title: 'Hết nước',
+              subTitle: 'Tìm điểm lấy nước?'
+            });
+            alert.addButton('Cancel');
+            alert.addButton({
+              text: 'Tìm',
+              handler: data => {
+                this.onLoading = true;
+                this.showAllWaters();
+                this.moveToMe();
+                this.nearest = this.mGhModule.findNearestWaterResourse();
+
+                this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
+
+                  this.drawDirection(data);
+                  this.onLoading = false;
+                });
+              }
+            });
+
+            alert.present();
+          }
+          else {
+            if (tree.id == this.mGhModule.getQuest().tree.id) {
+              this.waterTree(tree);
+            }
+            else {
+              let alert = this.mAlertController.create({
+                title: 'Thông báo',
+                subTitle: 'Cây này không phải nhiệm vụ hiện tại. Bạn chắc chắn muốn tưới?',
+              });
+
+              alert.addButton('Cancel');
+              alert.addButton({
+                text: 'OK',
+                handler: data => {
+                  this.waterTree(tree);
+                }
+              });
+
+              alert.present();
+            }
+          }
+        }
+      }
+    });
+
+    infoWindow.appendChild(text);
+    if (this.me.status == WorkStatus.WORKING) {
+      infoWindow.appendChild(btn);
+    }
+
+    this.infoWindow.setContent(infoWindow);
+    this.infoWindow.open(tree.getMarker());
   }
 
   treeAround: Array<Tree> = [];
@@ -588,6 +695,16 @@ export class GhHomePage {
               + "Loại cây: " + tree.type_name + "<br>"
               + "lượng nước hiện tại: " + tree.current_water_level + "/" + tree.max_water_level;
 
+            tree.getMarker().setIcon({
+              url: tree.getIconUrl(tree.id == this.mGhModule.getQuest().tree.id),
+              size: {
+                width: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 25 : 15,
+                height: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 35 : 25
+              },
+            });
+
+            this.socketWaterTree(tree);
+
             toast = this.mToastController.create({
               message: "Tưới thành công",
               duration: 1000
@@ -611,6 +728,16 @@ export class GhHomePage {
       });
       alert.present();
     }
+  }
+
+
+  socketWaterTree(tree: Tree) {
+
+    this.ghSocketProvider.updateWaterLevel(
+      {
+        current_water_level: tree.current_water_level,
+        id: tree.id
+      });
   }
 
   clearTreesMarker() {
@@ -664,13 +791,20 @@ export class GhHomePage {
   i = 1;
 
   onClickTitle() {
-    // console.log("My location", this.tempUser);
-    // this.tempUser.location = {
-    //   lat: Math.random(),
-    //   lng: Math.random()
-    // };
+    // this.i++;
+    // if (this.i % 2 == 0) {
+    //   this.onChangePosition({
+    //     lat: 21.005618,
+    //     lng: 105.843347
+    //   });
+    // }
+    // else{
+    //   this.onChangePosition({
+    //     lat: 21.003790,
+    //     lng: 105.844415
+    //   });
+    // }
 
-    // this.ghSocketProvider.updateUserLocation(this.tempUser.id, this.tempUser.location);
   }
 
   // ---------------------------------------FUNCTION
@@ -679,6 +813,8 @@ export class GhHomePage {
       this.mGhModule.stopWorking();
 
       this.me.emptyWaterContainer();
+      if (this.infoWindow)
+        this.infoWindow.close();
       this.onChangeWaterLevel();
       this.deletePolyline();
       this.findTreesAround();
@@ -696,24 +832,25 @@ export class GhHomePage {
   }
 
   fillWaterContainer() {
-    let distance = Spherical.computeDistanceBetween(this.me.currentLocation, this.nearest.latLng);
+    let distance = 0;
+    // let distance = Spherical.computeDistanceBetween(this.me.currentLocation, this.nearest.latLng);
 
     if (this.me.waterContainer.currentLevel == 0) {
-      // if (distance > 10) {
-      //   let toast = this.mToastController.create({
-      //     message: "Bạn không trong phạm vi lấy nước!!!",
-      //     duration: 2000
-      //   });
+      if (distance > 10) {
+        let toast = this.mToastController.create({
+          message: "Bạn không trong phạm vi lấy nước!!!",
+          duration: 2000
+        });
 
-      //   toast.present();
-      // }
-      // else {
-      this.me.fillWaterContainer();
-      this.onChangeWaterLevel();
-      this.hideAllWaters();
-      this.onDoingQuest();
-      this.moveToMe();
-      // }
+        toast.present();
+      }
+      else {
+        this.me.fillWaterContainer();
+        this.onChangeWaterLevel();
+        this.hideAllWaters();
+        this.onDoingQuest();
+        this.moveToMe();
+      }
     }
   }
 
@@ -756,36 +893,55 @@ export class GhHomePage {
       text: 'OK',
       handler: data => {
         if (!this.me.waterContainer || !(parseInt(data, 10) == this.me.waterContainer.maxLevel)) {
-          if (data == "4") {
-            this.me.waterContainer = new WaterContainer(4, 4);
-          }
-          else if (data == "6") {
-            this.me.waterContainer = new WaterContainer(6, 6);
-          }
-          else if (data == "8") {
-            this.me.waterContainer = new WaterContainer(8, 8);
-          }
-          else if (data == "10") {
-            this.me.waterContainer = new WaterContainer(10, 10);
-          }
-          this.onLoading = true;
-          this.mGhModule.startWorking().then(() => {
-            this.onLoading = false;
-            this.onChangeWaterLevel();
-            this.onDoingQuest();
-          }).catch(() => {
-            console.log("ko co cay can tuoi");
-            let alert = this.mAlertController.create({
-              title: 'ERROR',
-              subTitle: 'ko co cay can tuoi',
-              buttons: ['OK']
+          if (data && data != "") {
+            if (data == "4") {
+              this.me.waterContainer = new WaterContainer(4, 4);
+            }
+            else if (data == "6") {
+              this.me.waterContainer = new WaterContainer(6, 6);
+            }
+            else if (data == "8") {
+              this.me.waterContainer = new WaterContainer(8, 8);
+            }
+            else if (data == "10") {
+              this.me.waterContainer = new WaterContainer(10, 10);
+            }
+            this.onLoading = true;
+            this.mGhModule.startWorking().then(() => {
+              this.onLoading = false;
+              this.onChangeWaterLevel();
+              this.onDoingQuest();
+            }).catch(() => {
+              console.log("ko co cay can tuoi");
+              let alert = this.mAlertController.create({
+                title: 'ERROR',
+                subTitle: 'ko co cay can tuoi',
+                buttons: ['OK']
+              });
+              alert.present();
             });
-            alert.present();
-          });
+          }
         }
       }
     });
     alert.present();
+  }
+
+  onUpdateRoute() {
+
+    if (this.me.waterContainer.currentLevel <= 0) {
+      this.onLoading = true;
+      this.nearest = this.mGhModule.findNearestWaterResourse();
+
+      this.mGhModule.directionTo(this.me.currentLocation, this.nearest.latLng).then((data: Array<ILatLng>) => {
+
+        this.drawDirection(data);
+        this.onLoading = false;
+      });
+    }
+    else {
+      this.onDoingQuest();
+    }
   }
 
   drawDirection(path: Array<ILatLng>) {
@@ -815,17 +971,9 @@ export class GhHomePage {
     this.myPolyline = null;
   }
 
-  waterTree(tree: Tree, marker: Marker) {
+  waterTree(tree: Tree) {
     if (tree.canBeWatered()) {
       this.onUpdateWater(tree);
-
-      marker.setIcon({
-        url: tree.getIconUrl(),
-        size: {
-          width: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 25 : 15,
-          height: this.mGhModule.getQuest() && (tree.id == this.mGhModule.getQuest().tree.id) ? 35 : 25
-        },
-      });
     }
     else {
       let alert = this.mAlertController.create({

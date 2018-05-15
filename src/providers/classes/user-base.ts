@@ -11,6 +11,8 @@ export class UserBase {
     userType: number;
     status = WorkStatus.OFFLINE;
 
+    lastUpdate = "";
+
     private TIME = 1; // thời gian trễ 1s
     private velocity = new LatLng(0, 0);
 
@@ -25,8 +27,20 @@ export class UserBase {
         return this._id;
     }
 
+    set id(id: string){
+        this._id = id;
+    }
+
     setLocation(latLng: LatLng) {
         this.currentLocation = latLng;
+    }
+    
+    setMarker(marker: Marker){
+        this.marker = marker;
+    }
+
+    updateTime(time: string){
+        this.lastUpdate = time;
     }
 
     move(latLng: ILatLng) {

@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { IonicPage, NavController, NavParams, AlertController } from 'ionic-angular';
 
 import { GhModule } from '../../providers/gh-module/gh-module'
-import { LatLng } from '@ionic-native/google-maps';
 
 
 @IonicPage()

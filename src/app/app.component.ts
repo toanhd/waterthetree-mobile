@@ -3,7 +3,6 @@ import {Platform} from 'ionic-angular';
 import {StatusBar} from '@ionic-native/status-bar';
 import {SplashScreen} from '@ionic-native/splash-screen';
 import {GhHomePage} from "../pages/gh-home/gh-home";
-import {GhLoadingPage} from "../pages/gh-loading/gh-loading";
 
 @Component({
     templateUrl: 'app.html'

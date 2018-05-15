@@ -1,6 +1,7 @@
+import { UserBase } from './../classes/user-base';
 import { Quest } from '../classes/quest';
 import { Http, Headers, Response } from '@angular/http';
-import { Injectable, Query } from '@angular/core';
+import { Injectable } from '@angular/core';
 
 import { Spherical, LatLng, Encoding } from '@ionic-native/google-maps';
 
@@ -22,6 +23,7 @@ export class GhModule {
   private directionService = new google.maps.DirectionsService();
 
   mUser: User = new User("");
+  otherUsers: Array<UserBase> = [];
   mTreeTypes: Array<TreeType> = [];
   trees: Array<Tree> = [];
   thirstyTrees: Array<Tree> = [];
@@ -55,6 +57,10 @@ export class GhModule {
 
   getUser() {
     return this.mUser;
+  }
+
+  setUserId(id: string){
+    this.mUser.id = id;
   }
 
   getHttpService() {
@@ -322,18 +328,32 @@ export class GhModule {
     });
   }
 
-  private arrangeTrees(arr: Array<Tree>) {
-    for (let i = 0; i < arr.length - 1; i++) {
-      for (let j = i + 1; j < arr.length; j++) {
-        let ratio1 = arr[i].current_water_level / arr[i].max_water_level;
-        let ratio2 = arr[j].current_water_level / arr[j].max_water_level;
-
-        if (ratio1 > ratio2) {
-          let temp = arr[i];
-          arr[i] = arr[j];
-          arr[j] = temp;
-        }
+  getUserById(userId: string) {
+    for (let i = 0; i < this.otherUsers.length; i++) {
+      let user = this.otherUsers[i];
+      if (userId == user.id) {
+        return user;
       }
     }
+    return null;
   }
+
+  addUser(user: UserBase){
+    this.otherUsers.push(user);
+  }
+
+  // private arrangeTrees(arr: Array<Tree>) {
+  //   for (let i = 0; i < arr.length - 1; i++) {
+  //     for (let j = i + 1; j < arr.length; j++) {
+  //       let ratio1 = arr[i].current_water_level / arr[i].max_water_level;
+  //       let ratio2 = arr[j].current_water_level / arr[j].max_water_level;
+
+  //       if (ratio1 > ratio2) {
+  //         let temp = arr[i];
+  //         arr[i] = arr[j];
+  //         arr[j] = temp;
+  //       }
+  //     }
+  //   }
+  // }
 }
